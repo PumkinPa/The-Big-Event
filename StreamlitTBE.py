@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from openpyxl import load_workbook
 
 # Define the JobSite class
 class JobSite:
@@ -19,7 +18,7 @@ class Group:
 def upload_file():
     uploaded_file = st.file_uploader("Upload Excel file", type=['xlsx'])
     if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)
+        df = pd.read_excel(uploaded_file)  # Removed openpyxl dependency
         
         job_sites = []
         groups = []
@@ -27,61 +26,70 @@ def upload_file():
         for index, row in df.iterrows():
             job_site_id = row['Job Site ID']
             people_needed = row['People Needed']
-            group_name = row['Group Name']
-            group_size = row['Number of People in Group']
             
-            job_sites.append(JobSite(job_site_id=job_site_id, people_needed=people_needed))
-            groups.append(Group(group_name=group_name, num_people=group_size))
-        
+            job_sites.append({'site_id': job_site_id, 'people_needed': people_needed})
+            
+            group_name = row['Group Name']
+            group_people = row['Number of People']
+            
+            groups.append({'group_name': group_name, 'number_of_people': group_people})
+    
         return job_sites, groups
     else:
-        st.error("Please upload a file first!")
         return None, None
-
-def match_groups_to_sites(job_sites, groups):
-    assignments = []
-    
-    for site in job_sites:
-        for group in groups:
-            if len(group.membership) == 0:
-                continue
-                
-            # Try to fit as much of the group into this job site
-            max_possible = min(len(group.membership), site.people_needed)
-            
-            if max_possible > 0:
-                new_assignment = {
-                    'group_name': f"{group.group_name}{' (split)' if max_possible < len(group.membership) else ''}",
-                    'site_id': site.site_id,
-                    'num_people': max_possible
-                }
-                
-                assignments.append(new_assignment)
-                group.membership -= set(range(max_possible))  # Fixed the remove_members issue
-                
-    return assignments
 
 def main():
     st.title("Job Site Group Matching")
     
-    job_sites, groups = upload_file()
+    job_sites_data, groups_data = upload_file()
     
-    if job_sites and groups:
+    if job_sites_data and groups_data:
         st.subheader("Preview of Uploaded Data")
         st.write("Job Sites:")
-        st.dataframe(pd.DataFrame([[js.site_id, js.people_needed] for js in job_sites], 
-                            columns=['Job Site ID', 'People Needed']))
+        job_sites_df = pd.DataFrame(job_sites_data)
+        st.dataframe(job_sites_df)
         
         st.write("Groups:")
-        st.dataframe(pd.DataFrame([[g.group_name, g.num_people] for g in groups],
-                            columns=['Group Name', 'Number of People']))
+        groups_df = pd.DataFrame(groups_data)
+        st.dataframe(groups_df)
+        
+        # Convert data to objects
+        job_sites = []
+        for js in job_sites_data:
+            job_sites.append(JobSite(js['site_id'], js['people_needed']))
+        
+        groups = []
+        for g in groups_data:
+            groups.append(Group(g['group_name'], g['number_of_people']))
         
         st.subheader("Matching Process")
-        assignments = match_groups_to_sites(job_sites, groups)
+        assignments = match_groups_to_job_sites(job_sites, groups)
         
         st.subheader("Assignment Results")
         result_df = pd.DataFrame(assignments)
         st.dataframe(result_df)
+
+def match_groups_to_job_sites(job_sites, groups):
+    assignments = []
+    
+    for js in job_sites:
+        remaining_spaces = js.people_needed
+        
+        for g in groups:
+            if remaining_spaces <= 0:
+                break
+            
+            assign_count = min(g.num_people, remaining_spaces)
+            
+            assignments.append({
+                'Job Site ID': js.site_id,
+                'Group Name': g.group_name,
+                'Number of People Assigned': assign_count
+            })
+            
+            remaining_spaces -= assign_count
+        
+    return assignments
 
 if __name__ == "__main__":
     main()

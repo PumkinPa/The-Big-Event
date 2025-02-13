@@ -31,7 +31,11 @@ def upload_file():
     return None, None
 
 def main():
-    st.title("Job Site Group Matching")
+
+    with st.sidebar:
+        #add a logo later 
+        st.write("If anything needs to be fixed just have Claire tell me.")
+    st.title("TBE Job Site Group Matching")
     
     job_sites_data, groups_data = upload_file()
     

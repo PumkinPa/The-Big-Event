@@ -95,15 +95,27 @@ def main():
                         # Remove the fully filled job site from remaining sites
                         remaining_job_sites.pop(0)
         
-        # Display the assignments
-        st.write("### Assignments:")
+        # Display the assignments in a tabular format
+        st.write("### Final Assignments")
+        
+        # Create lists to store assignment data
+        table_data = []
+        headers = ['Job Site ID', 'Group Name', 'People Assigned']
+        
         for site_id, assignments in all_assignments.items():
-            st.write(f"Job Site ID: {site_id}")
-            total_assigned = sum([a['people_assigned'] for a in assignments])
-            st.write(f"Total people assigned: {total_assigned}")
-            st.write("Group assignments:")
             for a in assignments:
-                st.write(f"- {a['group']} filled {a['people_assigned']} people")
+                table_data.append([
+                    site_id,
+                    a['group'],
+                    a['people_assigned']
+                ])
+        
+        # Create DataFrame and display
+        if len(table_data) > 0:
+            df = pd.DataFrame(table_data, columns=headers)
+            st.table(df)
+        else:
+            st.write("No assignments were made.")
 
 if __name__ == "__main__":
     main()

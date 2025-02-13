@@ -70,52 +70,57 @@ def main():
             current_people = group.num_people
             group_name = group.group_name
             
-            while current_people > 0 and len(remaining_job_sites) > 0:
-                # Get the first remaining job site
-                current_site = remaining_job_sites[0]
+            while True:
+                site_assigned = None
+                # First, try to find a perfect match
+                for i, site in enumerate(remaining_job_sites):
+                    if site.people_needed == current_people:
+                        site_assigned = i
+                        break
                 
-                # Calculate how many people can be assigned to this site
-                assign_amount = min(current_people, current_site.people_needed)
-                
-                if assign_amount > 0:
-                    # Record the assignment
-                    if current_site.site_id not in all_assignments:
-                        all_assignments[current_site.site_id] = []
-                    all_assignments[current_site.site_id].append({
-                        'group': group_name,
-                        'people_assigned': assign_amount
-                    })
-                    
-                    # Update remaining people in the group
-                    current_people -= assign_amount
-                    
-                    # Check if this job site is fully filled
-                    current_site.people_needed -= assign_amount
-                    if current_site.people_needed == 0:
-                        # Remove the fully filled job site from remaining sites
-                        remaining_job_sites.pop(0)
+                if site_assigned is not None:
+                    # Assign the entire group to this site
+                    site = remaining_job_sites.pop(site_assigned)
+                    all_assignments[site.site_id] = [group_name]
+                    current_people -= site.people_needed  # Remove the assigned people from the group's count
+                    if current_people <= 0:
+                        break  # No more people left in the group
+                else:
+                    # If no perfect match found, proceed to assign remaining people partially
+                    for i, site in enumerate(remaining_job_sites):
+                        if current_people >= site.people_needed:
+                            # Assign as much as needed from this group
+                            assigned = site.people_needed
+                            all_assignments.setdefault(site.site_id, []).append((group_name, assigned))
+                            current_people -= assigned
+                            # Remove the site if it's fully filled
+                            if current_people <= 0:
+                                break
+                    break
         
-        # Display the assignments in a tabular format
-        st.write("### Final Assignments")
-        
-        # Create lists to store assignment data
-        table_data = []
-        headers = ['Job Site ID', 'Group Name', 'People Assigned']
-        
+        # Display results
+        st.write("### Assignment Results:")
         for site_id, assignments in all_assignments.items():
-            for a in assignments:
-                table_data.append([
-                    site_id,
-                    a['group'],
-                    a['people_assigned']
-                ])
+            st.write(f"Site {site_id}:")
+            for group_assignment in assignments:
+                if isinstance(group_assignment, tuple):
+                    group_name, num_assigned = group_assignment
+                    st.write(f"- {group_name} assigned: {num_assigned}")
+                else:
+                    st.write(f"- {group_assignment} (full group)")
         
-        # Create DataFrame and display
-        if len(table_data) > 0:
-            df = pd.DataFrame(table_data, columns=headers)
-            st.table(df)
-        else:
-            st.write("No assignments were made.")
+        # Check if any groups were partially assigned
+        groups_used = set()
+        for assignments in all_assignments.values():
+            for a in assignments:
+                if isinstance(a, tuple):
+                    groups_used.add(a[0])
+        partial_groups = [g.group_name for g in groups if g.group_name in groups_used]
+        
+        # Check if any job sites are still unfilled
+        remaining_sites = [site.site_id for site in remaining_job_sites]
+        if remaining_sites:
+            st.write(f"### Warning: Sites {', '.join(remaining_sites)} are still unfilled.")
 
 if __name__ == "__main__":
     main()

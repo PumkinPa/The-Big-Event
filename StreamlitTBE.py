@@ -16,9 +16,9 @@ class Group:
         self.membership = set(range(num_people))  # Track individual members
 
 def upload_file():
-    uploaded_file = st.file_uploader("Upload Excel file", type=['xlsx'])
+    uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
     if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)  # Removed openpyxl dependency
+        df = pd.read_csv(uploaded_file)  # Changed to read CSV
         
         job_sites = []
         groups = []
@@ -58,38 +58,32 @@ def main():
         for js in job_sites_data:
             job_sites.append(JobSite(js['site_id'], js['people_needed']))
         
-        groups = []
-        for g in groups_data:
-            groups.append(Group(g['group_name'], g['number_of_people']))
+        # Convert group data to Group objects
+        group_objects = []
+        for group in groups_data:
+            group_objects.append(Group(group['group_name'], group['number_of_people']))
         
-        st.subheader("Matching Process")
-        assignments = match_groups_to_job_sites(job_sites, groups)
+        # Perform matching
+        assignments = []
+        for job_site in job_sites:
+            remaining_capacity = job_site.people_needed
+            for group in group_objects:
+                assign_count = min(group.num_people, remaining_capacity)
+                if assign_count > 0:
+                    assignments.append({
+                        'Job Site ID': job_site.site_id,
+                        'Group Name': group.group_name,
+                        'Number of People Assigned': assign_count
+                    })
+                    remaining_capacity -= assign_count
         
-        st.subheader("Assignment Results")
-        result_df = pd.DataFrame(assignments)
-        st.dataframe(result_df)
-
-def match_groups_to_job_sites(job_sites, groups):
-    assignments = []
-    
-    for js in job_sites:
-        remaining_spaces = js.people_needed
-        
-        for g in groups:
-            if remaining_spaces <= 0:
-                break
-            
-            assign_count = min(g.num_people, remaining_spaces)
-            
-            assignments.append({
-                'Job Site ID': js.site_id,
-                'Group Name': g.group_name,
-                'Number of People Assigned': assign_count
-            })
-            
-            remaining_spaces -= assign_count
-        
-    return assignments
+        # Display results
+        st.subheader("Assignments")
+        if len(assignments) > 0:
+            assignments_df = pd.DataFrame(assignments)
+            st.dataframe(assignments_df)
+        else:
+            st.write("No assignments to display.")
 
 if __name__ == "__main__":
     main()

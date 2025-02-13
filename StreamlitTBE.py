@@ -33,7 +33,7 @@ def upload_file():
 def main():
 
     with st.sidebar:
-        st.logo("https://se-images.campuslabs.com/clink/images/e26c4fde-15c3-47fd-8397-32bb6365d558c47c3d2e-bc6e-4b8b-af51-75e9022b7440.png?preset=med-sq") 
+        st.logo("https://se-images.campuslabs.com/clink/images/e26c4fde-15c3-47fd-8397-32bb6365d558c47c3d2e-bc6e-4b8b-af51-75e9022b7440.png?preset=med-sq", size="large") 
         st.write("If anything needs to be fixed just have Claire tell me.")
     st.title("TBE Job Site Group Matching")
     

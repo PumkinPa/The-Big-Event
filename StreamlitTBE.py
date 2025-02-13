@@ -24,13 +24,13 @@ def upload_file():
         groups = []
         
         for index, row in df.iterrows():
-            job_site_id = row['Job Site ID']
+            job_site_id = row['Job site ID']
             people_needed = row['People Needed']
             
             job_sites.append({'site_id': job_site_id, 'people_needed': people_needed})
             
             group_name = row['Group Name']
-            group_people = row['Number of People']
+            group_people = row['Number of people in group']
             
             groups.append({'group_name': group_name, 'number_of_people': group_people})
     
